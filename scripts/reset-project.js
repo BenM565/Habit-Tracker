@@ -110,3 +110,6 @@ rl.question(
     }
   }
 );
+"generate": "drizzle-kit generate",
+"push": "drizzle-kit push",
+"studio": "drizzle-kit studio"
