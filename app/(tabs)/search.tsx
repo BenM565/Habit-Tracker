@@ -10,6 +10,8 @@ export default function SearchScreen() {
   const [searchText, setSearchText] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [streakFilter, setStreakFilter] = useState<'all' | 'high' | 'low'>('all');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
   if (!context) return null;
   const { habits, categories } = context;
@@ -21,16 +23,30 @@ export default function SearchScreen() {
       streakFilter === 'all' ? true :
       streakFilter === 'high' ? habit.streak >= 7 :
       habit.streak < 7;
-    return matchesText && matchesCategory && matchesStreak;
+    const createdDate = habit.createdAt.split('T')[0];
+    const matchesFrom = !fromDate || createdDate >= fromDate;
+    const matchesTo = !toDate || createdDate <= toDate;
+    return matchesText && matchesCategory && matchesStreak && matchesFrom && matchesTo;
   });
 
   const activeFilters =
-    (searchText ? 1 : 0) + (selectedCategory ? 1 : 0) + (streakFilter !== 'all' ? 1 : 0);
+    (searchText ? 1 : 0) +
+    (selectedCategory ? 1 : 0) +
+    (streakFilter !== 'all' ? 1 : 0) +
+    (fromDate ? 1 : 0) +
+    (toDate ? 1 : 0);
 
   const clearFilters = () => {
     setSearchText('');
     setSelectedCategory(null);
     setStreakFilter('all');
+    setFromDate('');
+    setToDate('');
+  };
+
+  const inputStyle = {
+    flex: 1, borderWidth: 1, borderColor: colors.border, padding: 10,
+    borderRadius: 8, backgroundColor: colors.surface, color: colors.text, fontSize: 13,
   };
 
   return (
@@ -39,29 +55,54 @@ export default function SearchScreen() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <Text style={{ fontSize: 28, fontWeight: 'bold', color: colors.text }}>Search & Filter</Text>
           {activeFilters > 0 && (
-            <TouchableOpacity onPress={clearFilters}>
+            <TouchableOpacity onPress={clearFilters} accessibilityLabel="Clear all filters">
               <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '600' }}>Clear ({activeFilters})</Text>
             </TouchableOpacity>
           )}
         </View>
 
+        {/* Text search */}
         <TextInput
           placeholder="Search by name..."
           placeholderTextColor={colors.muted}
           value={searchText}
           onChangeText={setSearchText}
+          accessibilityLabel="Search habits by name"
           style={{
             borderWidth: 1, borderColor: colors.border, padding: 12, borderRadius: 8,
             backgroundColor: colors.surface, marginBottom: 20, color: colors.text,
           }}
         />
 
+        {/* Date range */}
+        <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 8, color: colors.text }}>Date Range (YYYY-MM-DD)</Text>
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+          <TextInput
+            placeholder="From"
+            placeholderTextColor={colors.muted}
+            value={fromDate}
+            onChangeText={setFromDate}
+            accessibilityLabel="Filter from date"
+            style={inputStyle}
+          />
+          <TextInput
+            placeholder="To"
+            placeholderTextColor={colors.muted}
+            value={toDate}
+            onChangeText={setToDate}
+            accessibilityLabel="Filter to date"
+            style={inputStyle}
+          />
+        </View>
+
+        {/* Category filter */}
         <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 10, color: colors.text }}>Filter by Category</Text>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
           {categories.map(cat => (
             <TouchableOpacity
               key={cat.id}
               onPress={() => setSelectedCategory(selectedCategory === cat.name ? null : cat.name)}
+              accessibilityLabel={`Filter by ${cat.name}`}
               style={{
                 paddingVertical: 8, paddingHorizontal: 14, borderRadius: 6,
                 backgroundColor: selectedCategory === cat.name ? colors.primary : colors.surface,
@@ -75,12 +116,14 @@ export default function SearchScreen() {
           ))}
         </View>
 
+        {/* Streak filter */}
         <Text style={{ fontSize: 14, fontWeight: '600', marginBottom: 10, color: colors.text }}>Filter by Streak</Text>
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
           {(['all', 'high', 'low'] as const).map(f => (
             <TouchableOpacity
               key={f}
               onPress={() => setStreakFilter(f)}
+              accessibilityLabel={`Filter streak: ${f}`}
               style={{
                 flex: 1, paddingVertical: 8, paddingHorizontal: 14, borderRadius: 6,
                 backgroundColor: streakFilter === f ? colors.primary : colors.surface,
@@ -94,6 +137,7 @@ export default function SearchScreen() {
           ))}
         </View>
 
+        {/* Results */}
         <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 12, color: colors.text }}>
           Results ({filteredHabits.length})
         </Text>
@@ -101,7 +145,7 @@ export default function SearchScreen() {
         {filteredHabits.length === 0 ? (
           <View style={{ backgroundColor: colors.surface, padding: 20, borderRadius: 8, alignItems: 'center' }}>
             <Text style={{ fontSize: 14, color: colors.muted, marginBottom: 8 }}>No habits match your filters</Text>
-            <TouchableOpacity onPress={clearFilters}>
+            <TouchableOpacity onPress={clearFilters} accessibilityLabel="Clear all filters">
               <Text style={{ fontSize: 12, color: colors.primary, fontWeight: '600' }}>Clear filters</Text>
             </TouchableOpacity>
           </View>
@@ -115,8 +159,11 @@ export default function SearchScreen() {
               }}
             >
               <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 4, color: colors.text }}>{habit.name}</Text>
-              <Text style={{ fontSize: 12, color: colors.muted, marginBottom: 8 }}>
+              <Text style={{ fontSize: 12, color: colors.muted, marginBottom: 6 }}>
                 {habit.categoryName} • Streak: {habit.streak} days{habit.completedToday === 1 ? ' ✓' : ''}
+              </Text>
+              <Text style={{ fontSize: 11, color: colors.muted, marginBottom: 8 }}>
+                Started: {habit.createdAt.split('T')[0]}
               </Text>
               <View style={{ height: 6, backgroundColor: colors.progressBg, borderRadius: 3, overflow: 'hidden', marginBottom: 8 }}>
                 <View style={{
