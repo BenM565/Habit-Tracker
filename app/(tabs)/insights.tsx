@@ -1,6 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BarChart } from 'react-native-gifted-charts';
 import { HabitContext } from './_layout';
 import { getCompletionLogsByDateRange, getWeeklyStreakForHabit } from '../../db/queries';
 import { useUser } from '../_layout';
@@ -9,6 +10,8 @@ import { useTheme } from '../../theme/ThemeContext';
 type ViewType = 'daily' | 'weekly' | 'monthly';
 type BarItem = { label: string; completed: number; total: number };
 type WeeklyStreakItem = { habitName: string; weeklyStreak: number; weeklyTarget: number };
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function InsightsScreen() {
   const context = useContext(HabitContext);
@@ -88,7 +91,16 @@ export default function InsightsScreen() {
   const completionRate = totalHabits > 0 ? Math.round((completedToday / totalHabits) * 100) : 0;
   const avgStreak = totalHabits > 0 ? Math.round(habits.reduce((s, h) => s + h.streak, 0) / totalHabits) : 0;
   const bestStreak = totalHabits > 0 ? Math.max(...habits.map(h => h.streak)) : 0;
-  const maxBar = Math.max(...barData.map(d => d.completed), 1);
+
+  // Format bar data for gifted-charts
+  const chartBars = barData.map(item => ({
+    value: item.completed,
+    label: item.label,
+    frontColor: colors.primary,
+    topLabelComponent: () => (
+      <Text style={{ fontSize: 9, color: colors.subtext, marginBottom: 2 }}>{item.completed}</Text>
+    ),
+  }));
 
   const byCategory: Record<string, { completed: number; total: number }> = {};
   habits.forEach(h => {
@@ -117,7 +129,7 @@ export default function InsightsScreen() {
           ))}
         </View>
 
-        {/* Chart */}
+        {/* Bar Chart */}
         <View style={{ backgroundColor: colors.surface, padding: 20, borderRadius: 8, marginBottom: 20 }}>
           <Text style={{ fontSize: 16, fontWeight: '600', marginBottom: 12, color: colors.text }}>Completion Chart</Text>
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
@@ -130,31 +142,44 @@ export default function InsightsScreen() {
                   backgroundColor: viewType === v ? colors.primary : colors.surfaceAlt,
                 }}
               >
-                <Text style={{ textAlign: 'center', fontWeight: '600', fontSize: 12, color: viewType === v ? '#fff' : colors.subtext, textTransform: 'capitalize' }}>
+                <Text style={{
+                  textAlign: 'center', fontWeight: '600', fontSize: 12,
+                  color: viewType === v ? '#fff' : colors.subtext,
+                  textTransform: 'capitalize',
+                }}>
                   {v}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-          <View style={{ height: 160, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-around' }}>
-            {barData.map((item, i) => {
-              const barH = maxBar > 0 ? (item.completed / maxBar) * 120 : 0;
-              return (
-                <View key={i} style={{ alignItems: 'center', gap: 4 }}>
-                  <Text style={{ fontSize: 10, color: colors.muted }}>{item.completed}</Text>
-                  <View style={{ width: 28, height: Math.max(barH, 2), backgroundColor: colors.primary, borderRadius: 4 }} />
-                  <Text style={{ fontSize: 10, color: colors.subtext, fontWeight: '600' }}>{item.label}</Text>
-                </View>
-              );
-            })}
-          </View>
+
+          {chartBars.length > 0 && (
+            <BarChart
+              data={chartBars}
+              barWidth={28}
+              spacing={Math.max(8, (SCREEN_WIDTH - 120) / chartBars.length - 28)}
+              roundedTop
+              hideRules
+              xAxisThickness={1}
+              yAxisThickness={0}
+              xAxisColor={colors.border}
+              yAxisTextStyle={{ color: colors.muted, fontSize: 10 }}
+              xAxisLabelTextStyle={{ color: colors.subtext, fontSize: 10 }}
+              noOfSections={4}
+              maxValue={Math.max(...chartBars.map(b => b.value), 4)}
+              barBorderRadius={4}
+              isAnimated
+            />
+          )}
         </View>
 
         {/* Weekly Streak Tracking */}
         {weeklyStreaks.length > 0 && (
           <View style={{ backgroundColor: colors.surface, padding: 15, borderRadius: 8, marginBottom: 20 }}>
-            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 4, color: colors.text }}>🗓 Weekly Streaks</Text>
-            <Text style={{ fontSize: 12, color: colors.muted, marginBottom: 14 }}>Consecutive weeks where weekly target was met</Text>
+            <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 4, color: colors.text }}>Weekly Streaks</Text>
+            <Text style={{ fontSize: 12, color: colors.muted, marginBottom: 14 }}>
+              Consecutive weeks where weekly target was met
+            </Text>
             {weeklyStreaks.map((item, i) => (
               <View key={i} style={{ marginBottom: 14 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -166,9 +191,7 @@ export default function InsightsScreen() {
                     </Text>
                   </View>
                 </View>
-                <Text style={{ fontSize: 11, color: colors.muted }}>
-                  Target: {item.weeklyTarget} days/week
-                </Text>
+                <Text style={{ fontSize: 11, color: colors.muted }}>Target: {item.weeklyTarget} days/week</Text>
               </View>
             ))}
           </View>
@@ -203,17 +226,25 @@ export default function InsightsScreen() {
               const progress = Math.min(habit.streak, t.weeklyTarget);
               const pct = Math.round((progress / t.weeklyTarget) * 100);
               const met = progress >= t.weeklyTarget;
+              const exceeded = habit.streak > t.weeklyTarget;
               return (
                 <View key={t.id} style={{ marginBottom: 14 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
                     <Text style={{ fontSize: 14, fontWeight: '600', color: colors.text }}>{habit.name}</Text>
-                    <Text style={{ fontSize: 12, color: met ? colors.primary : colors.warning, fontWeight: '600' }}>
-                      {progress}/{t.weeklyTarget} {met ? '✓' : ''}
+                    <Text style={{ fontSize: 12, fontWeight: '600', color: exceeded ? colors.primary : met ? colors.primary : colors.warning }}>
+                      {progress}/{t.weeklyTarget} {exceeded ? '🚀' : met ? '✓' : ''}
                     </Text>
                   </View>
                   <View style={{ height: 8, backgroundColor: colors.progressBg, borderRadius: 4, overflow: 'hidden' }}>
                     <View style={{ height: '100%', width: `${pct}%`, backgroundColor: met ? colors.primary : colors.warning }} />
                   </View>
+                  <Text style={{ fontSize: 11, color: colors.muted, marginTop: 3 }}>
+                    {exceeded
+                      ? `Exceeded by ${habit.streak - t.weeklyTarget} days`
+                      : met
+                        ? 'Target met!'
+                        : `${t.weeklyTarget - progress} days remaining`}
+                  </Text>
                 </View>
               );
             })}
