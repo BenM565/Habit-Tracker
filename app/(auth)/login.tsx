@@ -30,13 +30,24 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 20 }}>
-        <Text style={{ fontSize: 32, fontWeight: 'bold', textAlign: 'center', marginBottom: 8, color: colors.text }}>
-          Habit Tracker
-        </Text>
-        <Text style={{ fontSize: 15, textAlign: 'center', color: colors.muted, marginBottom: 40 }}>
-          Sign in to continue
-        </Text>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
+
+        {/* Logo / branding */}
+        <View style={{ alignItems: 'center', marginBottom: 36 }}>
+          <View style={{
+            width: 80, height: 80, borderRadius: 22, backgroundColor: colors.primary,
+            alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+            shadowColor: colors.primary, shadowOpacity: 0.4, shadowRadius: 12, elevation: 6,
+          }}>
+            <Text style={{ fontSize: 40 }}>🎯</Text>
+          </View>
+          <Text style={{ fontSize: 30, fontWeight: 'bold', color: colors.text, letterSpacing: 0.5 }}>
+            Habit Tracker
+          </Text>
+          <Text style={{ fontSize: 14, color: colors.muted, marginTop: 6 }}>
+            Build better habits, one day at a time
+          </Text>
+        </View>
 
         <TextInput
           placeholder="Email"
@@ -46,9 +57,10 @@ export default function LoginScreen() {
           keyboardType="email-address"
           autoCapitalize="none"
           editable={!loading}
+          accessibilityLabel="Email address"
           style={{
-            borderWidth: 1, borderColor: colors.border, padding: 14, marginBottom: 15,
-            borderRadius: 8, backgroundColor: colors.surface, color: colors.text,
+            borderWidth: 1, borderColor: colors.border, padding: 14, marginBottom: 14,
+            borderRadius: 10, backgroundColor: colors.surface, color: colors.text, fontSize: 15,
           }}
         />
 
@@ -59,27 +71,48 @@ export default function LoginScreen() {
           onChangeText={setPassword}
           secureTextEntry
           editable={!loading}
+          accessibilityLabel="Password"
           style={{
-            borderWidth: 1, borderColor: colors.border, padding: 14, marginBottom: 20,
-            borderRadius: 8, backgroundColor: colors.surface, color: colors.text,
+            borderWidth: 1, borderColor: colors.border, padding: 14, marginBottom: 22,
+            borderRadius: 10, backgroundColor: colors.surface, color: colors.text, fontSize: 15,
           }}
         />
 
         <TouchableOpacity
           onPress={handleLogin}
           disabled={loading}
-          style={{ backgroundColor: colors.primary, paddingVertical: 14, borderRadius: 8, marginBottom: 20, opacity: loading ? 0.6 : 1 }}
+          accessibilityLabel="Login"
+          accessibilityRole="button"
+          style={{
+            backgroundColor: colors.primary, paddingVertical: 15, borderRadius: 10,
+            marginBottom: 16, opacity: loading ? 0.6 : 1,
+            shadowColor: colors.primary, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
+          }}
         >
-          <Text style={{ color: '#fff', textAlign: 'center', fontWeight: '600', fontSize: 16 }}>
+          <Text style={{ color: '#fff', textAlign: 'center', fontWeight: '700', fontSize: 16 }}>
             {loading ? 'Logging in...' : 'Login'}
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => router.push('/(auth)/register')} disabled={loading}>
-          <Text style={{ textAlign: 'center', color: colors.primary, fontWeight: '600' }}>
+        <TouchableOpacity
+          onPress={() => router.push('/(auth)/register')}
+          disabled={loading}
+          accessibilityLabel="Go to register screen"
+        >
+          <Text style={{ textAlign: 'center', color: colors.primary, fontWeight: '600', fontSize: 14 }}>
             Don't have an account? Register
           </Text>
         </TouchableOpacity>
+
+        {/* Demo hint */}
+        <View style={{ marginTop: 32, padding: 14, backgroundColor: colors.surfaceAlt, borderRadius: 10 }}>
+          <Text style={{ textAlign: 'center', fontSize: 12, color: colors.muted, fontWeight: '600', marginBottom: 4 }}>
+            DEMO ACCOUNT
+          </Text>
+          <Text style={{ textAlign: 'center', fontSize: 12, color: colors.subtext }}>
+            demo@habits.com / demo123
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
