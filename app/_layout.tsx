@@ -3,9 +3,22 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { View, LogBox } from 'react-native';
 
-// expo-notifications logs a console error in Expo Go because remote push tokens
-// were removed in SDK 53. Local scheduled notifications still work fine.
-LogBox.ignoreLogs(['expo-notifications: Android Push notifications']);
+// Suppress expo-notifications Expo Go warnings — local scheduled notifications
+// still work fine; only remote push tokens were removed in SDK 53.
+LogBox.ignoreLogs([
+  'expo-notifications: Android Push notifications',
+  '`expo-notifications` functionality is not fully supported in Expo Go',
+]);
+const _warn = console.warn;
+console.warn = (...args: unknown[]) => {
+  if (typeof args[0] === 'string' && args[0].includes('expo-notifications')) return;
+  _warn(...args);
+};
+const _error = console.error;
+console.error = (...args: unknown[]) => {
+  if (typeof args[0] === 'string' && args[0].includes('expo-notifications')) return;
+  _error(...args);
+};
 import * as Crypto from 'expo-crypto';
 import { getUserByEmail, createUser, deleteUser } from '../db/queries';
 import { seedDatabase } from '../db/seed';
@@ -126,6 +139,7 @@ function RootLayoutNav() {
       <Stack.Screen name="login" />
       <Stack.Screen name="index" />
       <Stack.Screen name="add-habit" options={{ title: 'Add Habit', presentation: 'modal', headerShown: true }} />
+      <Stack.Screen name="categories" options={{ title: 'Categories', presentation: 'modal', headerShown: true }} />
       <Stack.Screen name="habit/[id]" options={{ title: 'Details', headerShown: true }} />
       <Stack.Screen name="habit/[id]/edit" options={{ title: 'Edit Habit', presentation: 'modal', headerShown: true }} />
     </Stack>
